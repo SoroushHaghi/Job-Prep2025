@@ -1,0 +1,1 @@
+Day 1: Bridged from Pandas to NumPy for signal processing. Practiced array creation, vectorization, & slicing. Simulated a noisy sine wave, then filtered it using SciPy & visualized the results with Matplotlib. Project managed with Git.
