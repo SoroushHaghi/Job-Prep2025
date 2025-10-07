@@ -1,8 +1,11 @@
+README.md
 pyproject.toml
 job_prep_project.egg-info/PKG-INFO
 job_prep_project.egg-info/SOURCES.txt
 job_prep_project.egg-info/dependency_links.txt
 job_prep_project.egg-info/top_level.txt
 src/__init__.py
+src/signal_generator.py
 src/utils.py
+tests/test_signal_generator.py
 tests/test_utils.py
