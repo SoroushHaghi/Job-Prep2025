@@ -1,7 +1,9 @@
+
 # tests/test_utils.py
 import numpy as np
 from src.utils import moving_average, apply_butterworth_filter
 from src.signal_generator import generate_synthetic_signal
+
 
 def test_moving_average_simple():
     # Arrange
@@ -15,6 +17,7 @@ def test_moving_average_simple():
     # Assert
     assert result == expected
 
+
 def test_apply_butterworth_filter_reduces_noise():
     """
     Tests if the filter actually reduces the variance (noise) of a signal.
@@ -25,13 +28,13 @@ def test_apply_butterworth_filter_reduces_noise():
         sampling_rate_hz=100,
         freq_hz=2,
         amplitude=1.0,
-        noise_amplitude=0.5  
+        noise_amplitude=0.5
     )
 
     # Act: Apply the filter
     filtered_signal = apply_butterworth_filter(
         data=noisy_signal,
-        cutoff_freq=10,  
+        cutoff_freq=10,
         sampling_rate=100
     )
 

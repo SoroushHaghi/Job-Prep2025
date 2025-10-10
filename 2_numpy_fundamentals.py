@@ -33,7 +33,7 @@ print(f"a * b = {a * b}")
 
 # --- Task 2.3: Universal Functions (ufuncs) ---
 print("\n--- 2.3: Universal Functions ---")
-angles = np.array([0, np.pi/2, np.pi]) # np.pi is a built-in constant for pi
+angles = np.array([0, np.pi/2, np.pi])  # np.pi is a built-in constant for pi
 print(f"Sine of angles: {np.sin(angles)}")
 
 data = np.array([10, 20, 30, 40, 50])
@@ -41,7 +41,7 @@ print(f"Mean of data: {np.mean(data)}")
 
 # --- Task 2.4: Indexing and Slicing ---
 print("\n--- 2.4: Indexing & Slicing ---")
-my_array = np.arange(10) # Creates an array [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+my_array = np.arange(10)  # Creates an array [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 print(f"Original array: {my_array}")
 
 # Get the third element (indexing starts at 0)

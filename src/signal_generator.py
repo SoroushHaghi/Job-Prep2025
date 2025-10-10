@@ -1,7 +1,11 @@
+
 # src/signal_generator.py
 import numpy as np
 
-def generate_synthetic_signal(duration_s, sampling_rate_hz, freq_hz, amplitude, noise_amplitude):
+
+def generate_synthetic_signal(
+    duration_s, sampling_rate_hz, freq_hz, amplitude, noise_amplitude
+):
     """
     Generates a synthetic sine wave signal with added Gaussian noise.
 
@@ -18,13 +22,13 @@ def generate_synthetic_signal(duration_s, sampling_rate_hz, freq_hz, amplitude, 
     num_samples = int(duration_s * sampling_rate_hz)
     time = np.linspace(0, duration_s, num_samples, endpoint=False)
 
-    # (Clean signal)
+    # Clean signal
     clean_signal = amplitude * np.sin(2 * np.pi * freq_hz * time)
 
-    # (Noise)
+    # Noise
     noise = noise_amplitude * np.random.normal(size=time.shape)
 
-    #(Final noisy signal)
+    # Final noisy signal
     noisy_signal = clean_signal + noise
 
     return time, noisy_signal

@@ -1,6 +1,6 @@
 # src/utils.py
 from scipy.signal import butter, filtfilt
-import numpy as np
+
 
 def moving_average(data, window_size):
     """Calculates the moving average of a list of numbers."""
@@ -9,9 +9,11 @@ def moving_average(data, window_size):
 
     averages = []
     for i in range(len(data) - window_size + 1):
-        window = data[i : i + window_size]
+        window = data[i:i + window_size]
         averages.append(sum(window) / window_size)
     return averages
+
+
 def apply_butterworth_filter(data, cutoff_freq, sampling_rate, order=4):
     """
     Applies a low-pass Butterworth filter to the data.
