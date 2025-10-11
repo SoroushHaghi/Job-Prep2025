@@ -1,2 +1,6 @@
 [flake8]
-exclude = venv
+exclude =
+    venv,
+    Day01-Numpy-Scipy,
+    src,
+    tests
