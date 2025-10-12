@@ -15,7 +15,7 @@ def test_moving_average_simple():
     result = moving_average(test_data, window)
 
     # Assert
-    assert result == [0, 0, 0]  # Deliberately break the test
+    assert result == expected
 
 def test_apply_butterworth_filter_reduces_noise():
     """
