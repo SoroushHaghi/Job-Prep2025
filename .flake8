@@ -2,4 +2,4 @@
 exclude =
     venv,
     sandbox
-    
+max-line-length = 88
