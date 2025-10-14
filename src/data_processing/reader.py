@@ -62,8 +62,10 @@ if __name__ == "__main__":
             reading = sensor.read_data()
             if reading:
                 ts, x, y, z = reading
+                # This print statement is now broken into multiple lines
                 print(
-                    f"Timestamp: {ts}, Accel(x,y,z): ({x:.2f}, {y:.2f}, {z:.2f})"
+                    f"Timestamp: {ts}, Accel(x,y,z): "
+                    f"({x:.2f}, {y:.2f}, {z:.2f})"
                 )
 
         print("\nSimulating real-time reading...")
