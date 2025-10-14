@@ -1,32 +1,77 @@
 import csv
 import os
+import time
 
-# مسیر فایل داده نسبت به ریشه پروژه تعریف می‌شود
-DATA_FILE_PATH = os.path.join('data', 'accelerometer_data.csv')
-
-def read_and_print_data_sample(file_path, num_lines=5):
+class MockSensor:
     """
-    چند خط اول از فایل CSV داده‌های سنسور را می‌خواند و چاپ می‌کند.
+    A mock sensor class that simulates reading data from a real sensor
+    by reading from a CSV file.
     """
-    print(f"--- Reading sample data from: {file_path} ---")
-    try:
-        with open(file_path, 'r', newline='') as csvfile:
-            csv_reader = csv.reader(csvfile)
-            
-            header = next(csv_reader)
-            print(f"Header: {', '.join(header)}")
-            
-            print("--- Data Samples: ---")
-            for i, row in enumerate(csv_reader):
-                if i < num_lines:
-                    print(f"Row {i+1}: {', '.join(row)}")
-                else:
-                    break
-    except FileNotFoundError:
-        print(f"ERROR: File '{file_path}' not found.")
-        print("Please ensure you are running this script from the project's root directory (Job-Prep2025).")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+    def __init__(self, file_path='data/accelerometer_data.csv'):
+        """
+        Initializes the sensor by loading the data from the CSV file.
+        """
+        self.file_path = file_path
+        self.data = []
+        self._load_data()
+        self.current_index = 0
 
+    def _load_data(self):
+        """
+        Private method to load all sensor readings from the file into memory.
+        """
+        try:
+            with open(self.file_path, 'r', newline='') as csvfile:
+                csv_reader = csv.reader(csvfile)
+                header = next(csv_reader)  # Skip header
+                for row in csv_reader:
+                    # Convert string values to float for processing
+                    timestamp = float(row[0])
+                    acc_x = float(row[1])
+                    acc_y = float(row[2])
+                    acc_z = float(row[3])
+                    self.data.append((timestamp, acc_x, acc_y, acc_z))
+            print(f"Successfully loaded {len(self.data)} data points from {self.file_path}")
+        except FileNotFoundError:
+            print(f"ERROR: Data file not found at {self.file_path}")
+        except Exception as e:
+            print(f"An error occurred while loading data: {e}")
+
+    def read_data(self):
+        """
+        Reads the next available data point from the loaded data.
+        Returns None if all data has been read.
+        """
+        if self.current_index < len(self.data):
+            data_point = self.data[self.current_index]
+            self.current_index += 1
+            return data_point
+        else:
+            print("End of dataset reached.")
+            return None
+
+# --- Example of how to use this class ---
 if __name__ == "__main__":
-    read_and_print_data_sample(DATA_FILE_PATH)
+    print("Initializing the mock sensor...")
+    sensor = MockSensor()
+
+    if sensor.data: # Only proceed if data was loaded successfully
+        print("\nReading first 5 data points:")
+        for _ in range(5):
+            reading = sensor.read_data()
+            if reading:
+                # Unpack the tuple for nice printing
+                ts, x, y, z = reading
+                print(f"Timestamp: {ts}, Accel(x,y,z): ({x:.2f}, {y:.2f}, {z:.2f})")
+
+        print("\nSimulating real-time reading...")
+        # Reset index to simulate starting over
+        sensor.current_index = 0
+        while True:
+            reading = sensor.read_data()
+            if reading is None:
+                # Stop the loop if we run out of data
+                break
+            ts, x, y, z = reading
+            print(f"Read: Accel X={x:.2f}, Y={y:.2f}, Z={z:.2f}")
+            time.sleep(0.1) # Wait 100ms to simulate a 10Hz sensor
