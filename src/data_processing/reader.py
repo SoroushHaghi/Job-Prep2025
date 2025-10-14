@@ -30,7 +30,7 @@ class MockSensor:
                     acc_x = float(row[1])
                     acc_y = float(row[2])
                     acc_z = float(row[3])
-                    self.data..append((timestamp, acc_x, acc_y, acc_z))
+                    self.data.append((timestamp, acc_x, acc_y, acc_z))
             print(f"Loaded {len(self.data)} points from {self.file_path}")
         except FileNotFoundError:
             print(f"ERROR: Data file not found at {self.file_path}")
