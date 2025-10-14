@@ -19,6 +19,8 @@ def apply_butterworth_filter(data, cutoff_freq, sampling_rate, order=4):
     b, a = butter(order, normal_cutoff, btype="low", analog=False)
     filtered_data = filtfilt(b, a, data)
     return filtered_data
+
+
 def detect_events(data, threshold):
     """
     Detects events in a signal where the absolute value
@@ -26,7 +28,7 @@ def detect_events(data, threshold):
 
     Returns the indices of the detected events.
     """
-    # Calculate the mean to center the data around zero for easier detection
+    # Calculate the mean to center the data for easier detection
     mean_val = np.mean(data)
     centered_data = data - mean_val
 
