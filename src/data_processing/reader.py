@@ -1,6 +1,6 @@
 import csv
-import os
 import time
+
 
 class MockSensor:
     """
@@ -18,12 +18,12 @@ class MockSensor:
 
     def _load_data(self):
         """
-        Private method to load all sensor readings from the file into memory.
+        Private method to load all sensor readings from file into memory.
         """
         try:
             with open(self.file_path, 'r', newline='') as csvfile:
                 csv_reader = csv.reader(csvfile)
-                header = next(csv_reader)  # Skip header
+                next(csv_reader)  # Skip header without assigning to a variable
                 for row in csv_reader:
                     # Convert string values to float for processing
                     timestamp = float(row[0])
@@ -31,7 +31,7 @@ class MockSensor:
                     acc_y = float(row[2])
                     acc_z = float(row[3])
                     self.data.append((timestamp, acc_x, acc_y, acc_z))
-            print(f"Successfully loaded {len(self.data)} data points from {self.file_path}")
+            print(f"Loaded {len(self.data)} points from {self.file_path}")
         except FileNotFoundError:
             print(f"ERROR: Data file not found at {self.file_path}")
         except Exception as e:
@@ -50,28 +50,28 @@ class MockSensor:
             print("End of dataset reached.")
             return None
 
+
 # --- Example of how to use this class ---
 if __name__ == "__main__":
     print("Initializing the mock sensor...")
     sensor = MockSensor()
 
-    if sensor.data: # Only proceed if data was loaded successfully
+    if sensor.data:  # Only proceed if data was loaded successfully
         print("\nReading first 5 data points:")
         for _ in range(5):
             reading = sensor.read_data()
             if reading:
-                # Unpack the tuple for nice printing
                 ts, x, y, z = reading
-                print(f"Timestamp: {ts}, Accel(x,y,z): ({x:.2f}, {y:.2f}, {z:.2f})")
+                print(
+                    f"Timestamp: {ts}, Accel(x,y,z): ({x:.2f}, {y:.2f}, {z:.2f})"
+                )
 
         print("\nSimulating real-time reading...")
-        # Reset index to simulate starting over
-        sensor.current_index = 0
+        sensor.current_index = 0  # Reset index to simulate starting over
         while True:
             reading = sensor.read_data()
             if reading is None:
-                # Stop the loop if we run out of data
                 break
             ts, x, y, z = reading
             print(f"Read: Accel X={x:.2f}, Y={y:.2f}, Z={z:.2f}")
-            time.sleep(0.1) # Wait 100ms to simulate a 10Hz sensor
+            time.sleep(0.1)  # Wait 100ms to simulate a 10Hz sensor
