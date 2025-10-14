@@ -21,9 +21,9 @@ def plot_event_detection():
     )
 
     # --- Step 2: Analyze for Events ---
-    # We'll set a threshold of 0.3 m/s^2. Any deviation larger than this
+    # We'll set a threshold of 0.01 m/s^2. Any deviation larger than this
     # from the mean will be considered a "bump" or "shake".
-    event_threshold = 0.3
+    event_threshold = 0.01
     event_indices = detect_events(filtered_signal, threshold=event_threshold)
     print(f"Detected {len(event_indices)} event points.")
 
