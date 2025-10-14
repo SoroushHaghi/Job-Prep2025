@@ -1,6 +1,5 @@
 [flake8]
 exclude =
     venv,
-    Day01-Numpy-Scipy,
-    src,
-    tests
+    sandbox
+    
