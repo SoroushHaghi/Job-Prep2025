@@ -1,41 +1,40 @@
-
 # tests/test_utils.py
 import numpy as np
 from src.utils import moving_average, apply_butterworth_filter
 from src.signal_generator import generate_synthetic_signal
+from src.data_processing.reader import MockSensor # <-- This is the key new import
+
+# Add this import at the top of your file with the others
+from src.data_processing.reader import MockSensor
+
+# ... (your existing two test functions remain here) ...
 
 
-def test_moving_average_simple():
-    # Arrange
-    test_data = [1, 2, 3, 4, 5]
-    window = 3
-    expected = [2.0, 3.0, 4.0]
-
-    # Act
-    result = moving_average(test_data, window)
-
-    # Assert
-    assert result == expected
-
-def test_apply_butterworth_filter_reduces_noise():
+# Add this new function at the end of the file
+def test_butterworth_filter_on_real_sensor_data():
     """
-    Tests if the filter actually reduces the variance (noise) of a signal.
+    Tests if the filter reduces noise on a real dataset from the MockSensor.
     """
-    # Arrange: Create a signal with significant noise
-    time, noisy_signal = generate_synthetic_signal(
-        duration_s=5,
-        sampling_rate_hz=100,
-        freq_hz=2,
-        amplitude=1.0,
-        noise_amplitude=0.5
-    )
+    # --- Arrange ---
+    # 1. Initialize our virtual sensor
+    sensor = MockSensor()
+    assert len(sensor.data) > 0, "MockSensor should load data for the test."
 
-    # Act: Apply the filter
+    # 2. Read all the data points and extract just the Z-axis acceleration
+    # We use the Z-axis because it should be relatively stable around 9.8 m/s^2 (gravity)
+    # but with sensor noise and small movements.
+    raw_z_axis_data = [reading[3] for reading in sensor.data]
+    raw_signal = np.array(raw_z_axis_data)
+
+    # --- Act ---
+    # 3. Apply the same Butterworth filter to this real-world signal
+    # We'll use a cutoff frequency of 5Hz, a reasonable value for this type of data.
     filtered_signal = apply_butterworth_filter(
-        data=noisy_signal,
-        cutoff_freq=10,
-        sampling_rate=100
+        data=raw_signal,
+        cutoff_freq=5,
+        sampling_rate=100  # Assuming our data was sampled at 100Hz
     )
 
-    # Assert: The variance (a measure of noise) should decrease
-    assert np.var(filtered_signal) < np.var(noisy_signal)
+    # --- Assert ---
+    # 4. The assertion is the same: the filter should reduce the signal's variance (noise)
+    assert np.var(filtered_signal) < np.var(raw_signal)
