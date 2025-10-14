@@ -7,7 +7,8 @@ class MockSensor:
     A mock sensor class that simulates reading data from a real sensor
     by reading from a CSV file.
     """
-    def __init__(self, file_path='data/accelerometer_data.csv'):
+
+    def __init__(self, file_path="data/accelerometer_data.csv"):
         """
         Initializes the sensor by loading the data from the CSV file.
         """
@@ -21,11 +22,10 @@ class MockSensor:
         Private method to load all sensor readings from file into memory.
         """
         try:
-            with open(self.file_path, 'r', newline='') as csvfile:
+            with open(self.file_path, "r", newline="") as csvfile:
                 csv_reader = csv.reader(csvfile)
-                next(csv_reader)  # Skip header without assigning to a variable
+                next(csv_reader)  # Skip header
                 for row in csv_reader:
-                    # Convert string values to float for processing
                     timestamp = float(row[0])
                     acc_x = float(row[1])
                     acc_y = float(row[2])
@@ -51,31 +51,24 @@ class MockSensor:
             return None
 
 
-# --- Example of how to use this class ---
 if __name__ == "__main__":
     print("Initializing the mock sensor...")
     sensor = MockSensor()
 
-    if sensor.data:  # Only proceed if data was loaded successfully
+    if sensor.data:
         print("\nReading first 5 data points:")
         for _ in range(5):
             reading = sensor.read_data()
             if reading:
                 ts, x, y, z = reading
-                # This print statement is now broken into multiple lines
-                print(
-                    f"Timestamp: {ts}, Accel(x,y,z): "
-                    f"({x:.2f}, {y:.2f}, {z:.2f})"
-                )
+                print(f"Timestamp: {ts}, Accel(x,y,z): " f"({x:.2f}, {y:.2f}, {z:.2f})")
 
         print("\nSimulating real-time reading...")
-        sensor.current_index = 0  # Reset index to simulate starting over
+        sensor.current_index = 0
         while True:
             reading = sensor.read_data()
             if reading is None:
                 break
             ts, x, y, z = reading
             print(f"Read: Accel X={x:.2f}, Y={y:.2f}, Z={z:.2f}")
-            time.sleep(0.1)  # Wait 100ms to simulate a 10Hz sensor
-
-# IMPORTANT: Make sure there is one single, empty line after this line.
+            time.sleep(0.1)

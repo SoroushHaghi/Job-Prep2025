@@ -18,7 +18,7 @@ def test_generate_synthetic_signal_output_shape():
         sampling_rate_hz=sampling_rate,
         freq_hz=2,
         amplitude=1.0,
-        noise_amplitude=0.2
+        noise_amplitude=0.2,
     )
 
     assert len(time) == expected_samples

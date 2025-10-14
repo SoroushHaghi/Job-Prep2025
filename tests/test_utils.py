@@ -4,20 +4,21 @@ from src.utils import moving_average, apply_butterworth_filter
 from src.signal_generator import generate_synthetic_signal
 from src.data_processing.reader import MockSensor
 
-# --- TEST 1 (Original) ---
+
 def test_moving_average_simple():
     # Arrange
-    test_data = [1, 2, 3, 4, 5]
+    test_data = np.array([1, 2, 3, 4, 5])  # Use a numpy array for consistency
     window = 3
-    expected = [2.0, 3.0, 4.0]
+    expected = np.array([2.0, 3.0, 4.0])  # Expected result is also a numpy array
 
     # Act
     result = moving_average(test_data, window)
 
     # Assert
-    assert result == expected
+    # Use the correct numpy function to compare arrays element by element
+    np.testing.assert_array_equal(result, expected)
 
-# --- TEST 2 (Original) ---
+
 def test_apply_butterworth_filter_reduces_noise():
     """
     Tests if the filter actually reduces the variance (noise) of a signal.
@@ -28,20 +29,18 @@ def test_apply_butterworth_filter_reduces_noise():
         sampling_rate_hz=100,
         freq_hz=2,
         amplitude=1.0,
-        noise_amplitude=0.5
+        noise_amplitude=0.5,
     )
 
     # Act
     filtered_signal = apply_butterworth_filter(
-        data=noisy_signal,
-        cutoff_freq=10,
-        sampling_rate=100
+        data=noisy_signal, cutoff_freq=10, sampling_rate=100
     )
 
     # Assert
     assert np.var(filtered_signal) < np.var(noisy_signal)
 
-# --- TEST 3 (The New One) ---
+
 def test_butterworth_filter_on_real_sensor_data():
     """
     Tests if the filter reduces noise on a real dataset from the MockSensor.
@@ -54,9 +53,7 @@ def test_butterworth_filter_on_real_sensor_data():
 
     # Act
     filtered_signal = apply_butterworth_filter(
-        data=raw_signal,
-        cutoff_freq=5,
-        sampling_rate=100
+        data=raw_signal, cutoff_freq=5, sampling_rate=100
     )
 
     # Assert

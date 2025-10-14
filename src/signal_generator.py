@@ -1,4 +1,3 @@
-
 # src/signal_generator.py
 import numpy as np
 

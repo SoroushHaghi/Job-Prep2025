@@ -26,8 +26,8 @@ noisy_signal = clean_signal + noise
 
 # Plot both the clean and noisy signals
 plt.figure(figsize=(12, 6))  # Make the plot a bit wider
-plt.plot(time, noisy_signal, label='Noisy Signal')
-plt.plot(time, clean_signal, label='Clean Signal', linewidth=3)
+plt.plot(time, noisy_signal, label="Noisy Signal")
+plt.plot(time, clean_signal, label="Clean Signal", linewidth=3)
 plt.title("Clean vs. Noisy Signal")
 plt.xlabel("Time (s)")
 plt.ylabel("Amplitude")
@@ -41,11 +41,16 @@ filtered_signal = savgol_filter(noisy_signal, window_length=51, polyorder=3)
 
 # Plot all three signals to compare
 plt.figure(figsize=(12, 6))
-plt.plot(time, noisy_signal, label='Noisy Signal', alpha=0.5)
-plt.plot(time, filtered_signal, label='Filtered Signal',
-         linewidth=3, color='green')
-plt.plot(time, clean_signal, label='Original Clean Signal',
-         linestyle='--', linewidth=2, color='black')
+plt.plot(time, noisy_signal, label="Noisy Signal", alpha=0.5)
+plt.plot(time, filtered_signal, label="Filtered Signal", linewidth=3, color="green")
+plt.plot(
+    time,
+    clean_signal,
+    label="Original Clean Signal",
+    linestyle="--",
+    linewidth=2,
+    color="black",
+)
 plt.title("Filtering a Noisy Signal")
 plt.xlabel("Time (s)")
 plt.ylabel("Amplitude")

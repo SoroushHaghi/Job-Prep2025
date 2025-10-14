@@ -33,7 +33,7 @@ print(f"a * b = {a * b}")
 
 # --- Task 2.3: Universal Functions (ufuncs) ---
 print("\n--- 2.3: Universal Functions ---")
-angles = np.array([0, np.pi/2, np.pi])  # np.pi is a built-in constant for pi
+angles = np.array([0, np.pi / 2, np.pi])  # np.pi is a built-in constant for pi
 print(f"Sine of angles: {np.sin(angles)}")
 
 data = np.array([10, 20, 30, 40, 50])
