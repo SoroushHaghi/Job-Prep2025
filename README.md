@@ -9,3 +9,4 @@ Day 3: Automating with GitLab CI/CD.We'll build a pipeline to automatically lint
 
 Day 4/5:Built a 2-stage GitLab CI/CD pipeline to automate code quality checks. Stage 1 uses flake8 for linting, and Stage 2 uses pytest for unit testing. Proved its value by catching an intentional bug, demonstrating a working automated safety net.
 
+Day 6: Full Automation & Project Completion. Professionalized the local workflow by implementing pre-commit hooks to automatically format (black), lint (flake8), and test (pytest) code before every commit. Completed the analysis pipeline by adding event detection logic, with corresponding unit tests, and wrapped all functionality into a user-friendly Command-Line Interface (CLI).
