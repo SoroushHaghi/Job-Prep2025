@@ -35,3 +35,6 @@ def detect_events(data, threshold):
     # Find all points where the absolute value is above the threshold
     event_indices = np.where(np.abs(centered_data) > threshold)[0]
     return event_indices
+
+
+# This is a test comment to trigger the pre-commit hooks.
