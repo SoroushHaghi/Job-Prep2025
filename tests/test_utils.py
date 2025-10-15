@@ -1,6 +1,6 @@
 # tests/test_utils.py
 import numpy as np
-from src.utils import moving_average, apply_butterworth_filter
+from src.utils import moving_average, apply_butterworth_filter, detect_events
 from src.signal_generator import generate_synthetic_signal
 from src.data_processing.reader import MockSensor
 
@@ -58,3 +58,36 @@ def test_butterworth_filter_on_real_sensor_data():
 
     # Assert
     assert np.var(filtered_signal) < np.var(raw_signal)
+
+
+# Add these two new test functions to the end of tests/test_utils.py
+
+
+def test_detect_events_no_events_found():
+    """
+    Tests that no events are detected in a stable signal.
+    """
+    # Arrange: A perfectly flat signal and a threshold of 0.1
+    stable_signal = np.array([5.0, 5.0, 5.0, 5.0, 5.0])
+    threshold = 0.1
+
+    # Act: Run the detection
+    event_indices = detect_events(stable_signal, threshold=threshold)
+
+    # Assert: The result should be an empty list
+    assert len(event_indices) == 0
+
+
+def test_detect_events_finds_spikes():
+    """
+    Tests that events are correctly detected when a signal crosses the threshold.
+    """
+    # Arrange: A signal with two clear spikes at index 2 and 5
+    signal_with_spikes = np.array([0, 0, 5, 0, 0, -5, 0])
+    threshold = 4.0
+
+    # Act: Run the detection
+    event_indices = detect_events(signal_with_spikes, threshold=threshold)
+
+    # Assert: The function should find the spikes at indices 2 and 5
+    np.testing.assert_array_equal(event_indices, [2, 5])
