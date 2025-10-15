@@ -10,14 +10,14 @@ repos:
     hooks:
       - id: flake8
 
-  # This is the new, more robust section for pytest
+  # This is the final, corrected section for pytest
   - repo: local
     hooks:
       - id: pytest
         name: pytest
         entry: pytest
-        language: python  # Use a python environment
+        language: python
         types: [python]
         pass_filenames: false
-        # This line guarantees pytest is installed for the hook
-        additional_dependencies: [pytest]
+        # This is the crucial fix: tell the hook to also install numpy and scipy
+        additional_dependencies: [pytest, numpy, scipy]
