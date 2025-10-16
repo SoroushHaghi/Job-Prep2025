@@ -4,3 +4,7 @@ version = "0.0.1"
 
 [tool.setuptools]
 packages = ["src"]
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = "E501"

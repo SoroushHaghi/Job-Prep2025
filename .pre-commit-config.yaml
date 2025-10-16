@@ -10,7 +10,6 @@ repos:
     hooks:
       - id: flake8
 
-  # This is the final, corrected section for pytest
   - repo: local
     hooks:
       - id: pytest
@@ -19,5 +18,4 @@ repos:
         language: python
         types: [python]
         pass_filenames: false
-        # This is the crucial fix: tell the hook to also install numpy and scipy
         additional_dependencies: [pytest, numpy, scipy]

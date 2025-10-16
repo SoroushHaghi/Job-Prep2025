@@ -3,3 +3,4 @@ exclude =
     venv,
     sandbox
 max-line-length = 88
+extend-ignore = E501
