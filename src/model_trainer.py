@@ -8,8 +8,8 @@ from sklearn.metrics import accuracy_score, classification_report
 
 # --- Configuration ---
 FEATURES_PATH = os.path.join("data", "features.csv")
-MODEL_DIR = "models"  # <-- NOW INCLUDED
-MODEL_PATH = os.path.join(MODEL_DIR, "activity_classifier.joblib")  # <-- NOW INCLUDED
+MODEL_DIR = "models"
+MODEL_PATH = os.path.join(MODEL_DIR, "activity_classifier.joblib")
 
 
 def train_model():
@@ -67,7 +67,7 @@ def train_model():
     model.fit(X_train, y_train)
     print("Model training complete.")
 
-    # 5. Save the Model  <-- NOW INCLUDED
+    # 5. Save the Model
     print(f"Saving model to {MODEL_PATH}...")
     os.makedirs(MODEL_DIR, exist_ok=True)
     joblib.dump(model, MODEL_PATH)
@@ -79,9 +79,16 @@ def train_model():
     accuracy = accuracy_score(y_test, y_pred)
     print(f"Accuracy: {accuracy * 100:.2f}%")
     print("\nClassification Report:")
+
+    # --- UPDATED: Added digits=4 ---
+    # This will show the true, non-rounded precision/recall
+    # and resolve the 1.00 vs 99.80 confusion.
     print(
         classification_report(
-            y_test, y_pred, target_names=["Stillness (0)", "Movement (1)"]
+            y_test,
+            y_pred,
+            target_names=["Stillness (0)", "Movement (1)"],
+            digits=4,  # <-- This is the added parameter
         )
     )
 
