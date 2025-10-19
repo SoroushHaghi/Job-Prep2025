@@ -5,9 +5,9 @@ import os
 
 # --- ADJUST THIS IMPORT ---
 # Import your feature functions from their module.
-# I'm assuming your file is 'src/feature.py'.
+# I'm assuming your file is 'src/features.py'.
 # --------------------------
-from .feature import (
+from .features import (
     calculate_mean,
     calculate_std_dev,
     calculate_rms,
@@ -16,21 +16,22 @@ from .feature import (
 
 
 # --- Configuration ---
-WINDOW_SIZE = 100  # The number of data points in each window
+WINDOW_SIZE = 20  # The number of data points in each window
 MOVEMENT_DATA_PATH = os.path.join("data", "movement_sample.csv")
 OUTPUT_DATA_PATH = os.path.join("data", "features.csv")
 # Generate enough stillness data to be comparable to movement data
 STILLNESS_SAMPLES = 20000
 
 
-def generate_stillness_data(num_samples, noise_level=0.05):
+def generate_stillness_data(num_samples, noise_level=2.0):
     """
     Generates data simulating a sensor at rest.
     For simplicity, we assume all three axes have a slight noise around zero.
     """
     x = np.random.normal(0, noise_level, num_samples)
     y = np.random.normal(0, noise_level, num_samples)
-    z = np.random.normal(0, noise_level, num_samples)
+    # Noise around 9.8 for Z (simulating gravity)
+    z = np.random.normal(9.8, noise_level, num_samples)
     return pd.DataFrame({"X": x, "Y": y, "Z": z})
 
 

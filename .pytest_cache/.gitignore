@@ -1,0 +1,9 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Generated data
+data/features.csv
+
+# Saved ML models
+models/

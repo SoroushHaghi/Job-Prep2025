@@ -40,6 +40,23 @@ def train_model():
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
+    # --- CHECK THE DATA LEAKAGE ---
+    print("\n--- DATA LEAKAGE CHECK ---")
+    train_indices = set(X_train.index)
+    test_indices = set(X_test.index)
+
+    overlap = train_indices.intersection(test_indices)
+
+    print(f"Training samples: {len(train_indices)}")
+    print(f"Test samples: {len(test_indices)}")
+    print(f"Overlap (leaked samples): {len(overlap)}")
+
+    if len(overlap) > 0:
+        print("!!! WARNING: DATA LEAKAGE DETECTED !!!")
+    else:
+        print("--- CHECK PASSED: No data leakage. ---")
+    # --- END OF CHECK ---
+
     print(
         f"Data split: {len(X_train)} training samples, {len(X_test)} testing samples."
     )
