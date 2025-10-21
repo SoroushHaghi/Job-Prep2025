@@ -14,3 +14,5 @@ Day 6: Full Automation & Project Completion. Professionalized the local workflow
 Day 7: Refactored the project to a modular, driver-based architecture. Integrated real sensor data via a CSV reader and built/tested feature extraction functions (mean, RMS) for windowed signal analysis. Resolved all CI/CD and linter configuration issues.
 
 Day 8: Built ML pipeline to classify activity. Discovered initial 100% accuracy was due to a data logic flaw (orientation). Fixed the data simulation to force the model to learn vibration (std, rms), achieving a realistic 99.80%.
+
+Day 9: Built the complete E2E inference pipeline. Added the ActivityPredictor class (src/predictor.py) to load the model and a new predict-stream CLI command. This command simulates a live sensor stream and makes real-time predictions. Added unit tests for the predictor.
