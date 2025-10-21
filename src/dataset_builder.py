@@ -1,128 +1,128 @@
 # src/dataset_builder.py
-import numpy as np
 import pandas as pd
-import os
+from pathlib import Path
+from . import features  # Import feature extraction functions
+from .app import WINDOW_SIZE  # Use the same window size
 
-# --- ADJUST THIS IMPORT ---
-# Import your feature functions from their module.
-# I'm assuming your file is 'src/features.py'.
-# --------------------------
-from .features import (
-    calculate_mean,
-    calculate_std_dev,
-    calculate_rms,
-    # Add all your other feature functions here (e.g., calculate_variance)
-)
+# --- Configuration for Multi-Class Classification (3-Class) ---
+
+# Define the numeric labels for our classes
+# We start labels from 0
+CLASS_LABELS = {
+    "throwing": 0,
+    "drinking": 1,
+    "driving": 2,
+}
+
+# --- THIS SECTION IS UPDATED ---
+# Map our activity files to their corresponding labels
+# using the new, cleaner filenames.
+ACTIVITY_FILES = {
+    Path("data/throwing.csv"): CLASS_LABELS["throwing"],
+    Path("data/drinking.csv"): CLASS_LABELS["drinking"],
+    Path("data/driving.csv"): CLASS_LABELS["driving"],
+}
+# --- END OF UPDATE ---
+
+# Output file remains the same
+FEATURE_FILE = Path("data/features.csv")
+# ---
 
 
-# --- Configuration ---
-WINDOW_SIZE = 20  # The number of data points in each window
-MOVEMENT_DATA_PATH = os.path.join("data", "movement_sample.csv")
-OUTPUT_DATA_PATH = os.path.join("data", "features.csv")
-# Generate enough stillness data to be comparable to movement data
-STILLNESS_SAMPLES = 20000
-
-
-def generate_stillness_data(num_samples, noise_level=2.5):
+def create_features_from_file(filepath: Path, label: int) -> pd.DataFrame:
     """
-    Generates data simulating a sensor at rest, BUT in the same
-    orientation as the 'movement' data.
-
-    This forces the model to learn from vibration (std, rms)
-    instead of "cheating" by using orientation (mean).
-
-    (Based on the 'still' parts of movement_sample.csv)
+    Reads a raw data file, processes it into windows, extracts features,
+    and assigns a label.
     """
-    # Use the same base means as the 'movement' file
-    x_base_mean = 9.1
-    y_base_mean = -0.2
-    z_base_mean = -3.9
+    print(f"Processing file: {filepath} for label {label}...")
+    try:
+        df = pd.read_csv(filepath)
+    except FileNotFoundError:
+        print(f"Error: File not found at {filepath}")
+        print("Please make sure all activity CSVs are in the 'data/' directory.")
+        return pd.DataFrame()  # Return empty DataFrame
 
-    # Add our 'hardcore' noise to this orientation
-    x = np.random.normal(x_base_mean, noise_level, num_samples)
-    y = np.random.normal(y_base_mean, noise_level, num_samples)
-    z = np.random.normal(z_base_mean, noise_level, num_samples)
+    # --- Data Standardization (Robust column renaming) ---
+    # This handles 'x', 'acc_x', and 'X' all mapping to 'X'
+    df.rename(
+        columns={
+            "x": "X",
+            "y": "Y",
+            "z": "Z",
+            "acc_x": "X",
+            "acc_y": "Y",
+            "acc_z": "Z",
+        },
+        inplace=True,
+        errors="ignore",
+    )
 
-    return pd.DataFrame({"X": x, "Y": y, "Z": z})
+    # Ensure we only have the columns we need
+    if not all(col in df.columns for col in ["X", "Y", "Z"]):
+        print(f"Error: File {filepath} does not contain required X, Y, Z columns.")
+        return pd.DataFrame()
 
+    df = df[["X", "Y", "Z"]].dropna()
+    # ---
 
-def process_data_windows(data, window_size):
-    """
-    Slides a window over the data and extracts features for each window.
-    Returns a DataFrame where each row is a feature set for one window.
-    """
-    features_list = []
+    window_features = []
 
-    # Iterate over the data in steps of WINDOW_SIZE
-    for i in range(0, len(data) - window_size + 1, window_size):
-        # This slice format is intentional for `black` compatibility
-        window = data.iloc[i : i + window_size]
+    # Process the file in windows
+    for i in range(0, len(df) - WINDOW_SIZE + 1, WINDOW_SIZE):
+        window = df.iloc[i : i + WINDOW_SIZE]
 
-        # Ensure window is full size (drops the last partial window)
-        if len(window) < window_size:
-            continue
-
-        window_features = {}
+        feature_dict = {}
         for axis in ["X", "Y", "Z"]:
-            # Apply each feature extraction function to each axis
-            window_features[f"{axis}_mean"] = calculate_mean(window[axis])
-            window_features[f"{axis}_std"] = calculate_std_dev(window[axis])
-            window_features[f"{axis}_rms"] = calculate_rms(window[axis])
+            # Use the feature extraction functions
+            feature_dict[f"{axis}_mean"] = features.calculate_mean(window[axis])
+            feature_dict[f"{axis}_std"] = features.calculate_std_dev(window[axis])
+            feature_dict[f"{axis}_rms"] = features.calculate_rms(window[axis])
 
-            # --- ADD YOUR OTHER FUNCTIONS HERE ---
-            # Example:
-            # window_features[f'{axis}_variance'] = calculate_variance(window[axis])
-            # window_features[f'{axis}_min'] = calculate_min(window[axis])
-            # window_features[f'{axis}_max'] = calculate_max(window[axis])
+        window_features.append(feature_dict)
 
-        features_list.append(window_features)
+    if not window_features:
+        print(f"Warning: No feature windows generated for {filepath}.")
+        return pd.DataFrame()
 
-    return pd.DataFrame(features_list)
+    features_df = pd.DataFrame(window_features)
+    features_df["label"] = label  # Assign the correct label
+
+    print(f"Processed {len(features_df)} windows for label {label}.")
+    return features_df
 
 
 def build_feature_dataset():
     """
-    Main function to build and save the complete feature dataset.
+    Main function to build the multi-class feature dataset.
     """
-    print("Starting dataset building process...")
+    print("Starting 3-class dataset building process...")
 
-    # 1. Process "Movement" data
-    try:
-        movement_data = pd.read_csv(MOVEMENT_DATA_PATH)
-    except FileNotFoundError:
-        print(f"Error: Could not find {MOVEMENT_DATA_PATH}")
-        print("Please ensure 'movement_sample.csv' exists in the 'data' folder.")
+    all_features_list = []
+
+    # Loop through and process all activity files
+    for filepath, label in ACTIVITY_FILES.items():
+        activity_features = create_features_from_file(filepath, label)
+        if not activity_features.empty:
+            all_features_list.append(activity_features)
+
+    if not all_features_list:
+        print("Error: No data processed. Feature file not created.")
         return
-    except Exception as e:
-        print(f"Error reading movement data: {e}")
-        return
 
-    movement_features = process_data_windows(movement_data, WINDOW_SIZE)
-    movement_features["label"] = 1  # Label 1 for movement
-    print(f"Processed {len(movement_features)} 'movement' windows.")
+    # 3. Combine all features into one DataFrame
+    final_dataset = pd.concat(all_features_list, ignore_index=True)
 
-    # 2. Process "Stillness" data
-    stillness_data = generate_stillness_data(STILLNESS_SAMPLES)
-    stillness_features = process_data_windows(stillness_data, WINDOW_SIZE)
-    stillness_features["label"] = 0  # Label 0 for stillness
-    print(f"Processed {len(stillness_features)} 'stillness' windows.")
+    # 4. Save the combined dataset
+    FEATURE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    final_dataset.to_csv(FEATURE_FILE, index=False)
 
-    # 3. Combine and save
-    final_dataset = pd.concat(
-        [movement_features, stillness_features], ignore_index=True
-    )
-
-    # Ensure the 'data' directory exists
-    os.makedirs(os.path.dirname(OUTPUT_DATA_PATH), exist_ok=True)
-
-    final_dataset.to_csv(OUTPUT_DATA_PATH, index=False)
-    print(f"\nSuccessfully built and saved feature dataset to {OUTPUT_DATA_PATH}")
+    print(f"\nSuccessfully built and saved 3-class feature dataset to {FEATURE_FILE}")
     print(f"Total samples (windows): {len(final_dataset)}")
-    print("Dataset head:")
+    print("Class distribution:")
+    # Show value counts with human-readable labels
+    label_map = {v: k for k, v in CLASS_LABELS.items()}
+    print(final_dataset["label"].map(label_map).value_counts())
+
+    print("\nDataset head:")
     print(final_dataset.head())
-
-
-if __name__ == "__main__":
-    # This allows you to run the script directly from the terminal
-    # using: python src/dataset_builder.py
-    build_feature_dataset()
+    print("Feature dataset built successfully.")

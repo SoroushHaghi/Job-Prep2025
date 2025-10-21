@@ -2,7 +2,9 @@
 import numpy as np
 from src.utils import moving_average, apply_butterworth_filter, detect_events
 from src.signal_generator import generate_synthetic_signal
-from src.data_processing.reader import MockSensor
+
+# Corrected import path based on previous fixes
+from src.drivers import MockSensor
 
 
 def test_moving_average_simple():
@@ -46,9 +48,17 @@ def test_butterworth_filter_on_real_sensor_data():
     Tests if the filter reduces noise on a real dataset from the MockSensor.
     """
     # Arrange
-    sensor = MockSensor()
+
+    # Correct argument name for MockSensor
+    sensor = MockSensor(file_path="data/throwing.csv")
+
     assert len(sensor.data) > 0, "MockSensor should load data for the test."
-    raw_z_axis_data = [reading[3] for reading in sensor.data]
+
+    # --- THIS IS THE FIX ---
+    # MockSensor now returns (X, Y, Z), so Z is at index 2
+    raw_z_axis_data = [reading[2] for reading in sensor.data]
+    # --- END OF FIX ---
+
     raw_signal = np.array(raw_z_axis_data)
 
     # Act
@@ -58,9 +68,6 @@ def test_butterworth_filter_on_real_sensor_data():
 
     # Assert
     assert np.var(filtered_signal) < np.var(raw_signal)
-
-
-# Add these two new test functions to the end of tests/test_utils.py
 
 
 def test_detect_events_no_events_found():
