@@ -1,5 +1,4 @@
 # src/drivers.py
-
 from abc import ABC, abstractmethod
 import pandas as pd
 
@@ -38,14 +37,17 @@ class SimulationDriver(BaseSensorDriver):
         Reads the next row from the CSV file and returns it as a dictionary.
 
         Returns:
-            A dictionary with sensor data (e.g., {'x': 1.0, 'y': 0.5, 'z': 9.8})
+            A dictionary with sensor data (e.g., {'X': 1.0, 'Y': 0.5, 'Z': 9.8})
             or None if the end of the file is reached.
         """
         try:
             row = next(self.iterator)
-            # Assumes the CSV has columns named 'X', 'Y', 'Z'.
-            # The keys 'x', 'y', 'z' are lowercase for consistency in the application.
-            return {"x": row.X, "y": row.Y, "z": row.Z}
+
+            # --- THIS IS THE CRITICAL CHANGE ---
+            # We now return a dict with UPPERCASE keys ('X', 'Y', 'Z')
+            # to match the column names and the predictor's expectations.
+            return {"X": row.X, "Y": row.Y, "Z": row.Z}
+
         except StopIteration:
             # This happens when all data has been read
             return None

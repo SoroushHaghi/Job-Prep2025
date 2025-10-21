@@ -2,7 +2,7 @@
 import joblib
 import pandas as pd
 from pathlib import Path
-from . import features  # Import feature extraction functions from our package
+from . import features  # Import feature extraction functions
 
 
 class ActivityPredictor:
@@ -19,58 +19,50 @@ class ActivityPredictor:
         try:
             self.model = joblib.load(model_path)
         except FileNotFoundError:
-            # Handle the case where the model doesn't exist yet
             print(f"Error: Model not found at {model_path}")
             print("Please run the 'train' command first to create the model.")
             raise
         except Exception as e:
-            # Catch other potential loading errors (e.g., corrupt file)
             print(f"Error loading model: {e}")
             raise
 
-        # This is the exact order of features the model was trained on.
-        # It's crucial for prediction that the input DataFrame matches this order.
+        # This list MUST match the feature names used during training (X_mean, Y_mean, etc.)
         self.feature_order = [
-            "acc_x_mean",
-            "acc_x_std",
-            "acc_x_rms",
-            "acc_y_mean",
-            "acc_y_std",
-            "acc_y_rms",
-            "acc_z_mean",
-            "acc_z_std",
-            "acc_z_rms",
+            "X_mean",
+            "X_std",
+            "X_rms",
+            "Y_mean",
+            "Y_std",
+            "Y_rms",
+            "Z_mean",
+            "Z_std",
+            "Z_rms",
         ]
 
     def predict(self, data_window: list[dict]) -> int:
         """
         Predicts the activity for a single window of sensor data.
 
-        :param data_window: A list of dictionaries, where each dict is a sensor sample
-                            (e.g., {'x': 1.0, 'y': 0.5, 'z': 0.1})
-        :return: The predicted label (e.g., 0 for 'Stillness', 1 for 'Movement').
+        :param data_window: A list of dictionaries, e.g., [{'X': 1, 'Y': 2, 'Z': 3}, ...]
+        :return: The predicted label (0 for 'Stillness', 1 for 'Movement').
         """
 
-        # 1. Convert the list of dictionaries into a DataFrame
-        # Ensure data is numeric (float) for calculations
+        # 1. Convert window to a DataFrame (now has columns 'X', 'Y', 'Z')
         window_df = pd.DataFrame(data_window).astype(float)
 
-        # 2. Extract features for each axis using the functions from features.py
+        # 2. Extract features for each axis
         feature_dict = {}
-        for axis in ["x", "y", "z"]:
-            feature_dict[f"acc_{axis}_mean"] = features.calculate_mean(window_df[axis])
-            feature_dict[f"acc_{axis}_std"] = features.calculate_std_dev(
-                window_df[axis]
-            )
-            feature_dict[f"acc_{axis}_rms"] = features.calculate_rms(window_df[axis])
+        # Loop over uppercase axes ('X', 'Y', 'Z')
+        for axis in ["X", "Y", "Z"]:
+            # Create feature names like 'X_mean', 'Y_std', etc.
+            feature_dict[f"{axis}_mean"] = features.calculate_mean(window_df[axis])
+            feature_dict[f"{axis}_std"] = features.calculate_std_dev(window_df[axis])
+            feature_dict[f"{axis}_rms"] = features.calculate_rms(window_df[axis])
 
-        # 3. Create a single-row DataFrame from the extracted features
-        # It's wrapped in a list [feature_dict] to make it a single row.
-        # We explicitly set the 'columns' to match self.feature_order.
+        # 3. Create a DataFrame in the correct feature order
         features_df = pd.DataFrame([feature_dict], columns=self.feature_order)
 
         # 4. Make the prediction
-        # model.predict() returns an array (e.g., [1]), so we extract the first item.
         prediction = self.model.predict(features_df)
 
         return prediction[0]
