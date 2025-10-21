@@ -5,6 +5,8 @@ from .drivers import BaseSensorDriver
 # Import your new feature calculation functions
 from .features import calculate_mean, calculate_std_dev, calculate_rms
 
+WINDOW_SIZE = 10  # Define the window size constant (must match predictor/trainer)
+
 
 def run_processing_loop(driver: BaseSensorDriver, window_size: int):
     """

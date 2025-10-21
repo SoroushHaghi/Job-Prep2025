@@ -28,7 +28,7 @@ def run(
         help="Path to the sensor data CSV file.",
     ),
     window_size: int = typer.Option(
-        50,
+        10,
         "--window-size",
         "-w",
         help="The number of samples to collect before calculating features.",
