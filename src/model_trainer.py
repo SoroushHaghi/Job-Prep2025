@@ -1,99 +1,142 @@
 # src/model_trainer.py
 import pandas as pd
-import os
-import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,  # Import confusion matrix
+    ConfusionMatrixDisplay,  # Import display function
+)
+import joblib
+from pathlib import Path
+import matplotlib.pyplot as plt  # Import matplotlib for plotting
 
 # --- Configuration ---
-FEATURES_PATH = os.path.join("data", "features.csv")
-MODEL_DIR = "models"
-MODEL_PATH = os.path.join(MODEL_DIR, "activity_classifier.joblib")
+FEATURE_FILE = Path("data/features.csv")
+MODEL_FILE = Path("models/activity_classifier.joblib")
+CONFUSION_MATRIX_FILE = Path("docs/confusion_matrix.png")  # Path to save the plot
+
+# Ensure the directories exist
+MODEL_FILE.parent.mkdir(parents=True, exist_ok=True)
+CONFUSION_MATRIX_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+# Define human-readable labels for the classes (MUST match dataset_builder)
+CLASS_NAMES = ["throwing", "drinking", "driving"]
+# ---
 
 
 def train_model():
     """
-    Loads features, splits data, trains a model, evaluates, and saves it.
+    Loads features, trains a RandomForestClassifier, evaluates it,
+    saves the model, and saves a confusion matrix plot.
     """
-    print("Starting model training process...")
+    print("Starting multi-class model training process...")
 
     # 1. Load Data
     try:
-        dataset = pd.read_csv(FEATURES_PATH)
+        df = pd.read_csv(FEATURE_FILE)
+        print(f"Feature data loaded successfully from {FEATURE_FILE}.")
+        print(f"Data shape: {df.shape}")
+        print("Class distribution in loaded data:")
+        # Map labels to names for better readability
+        label_map = {i: name for i, name in enumerate(CLASS_NAMES)}
+        print(df["label"].map(label_map).value_counts())
+
     except FileNotFoundError:
-        print(f"Error: Could not find {FEATURES_PATH}")
-        print("Please run the 'dataset_builder.py' script first.")
-        return
+        print(f"Error: Feature file not found at {FEATURE_FILE}")
+        print("Please run the 'build-features' command first.")
+        return  # Exit if data is missing
     except Exception as e:
         print(f"Error loading data: {e}")
         return
 
-    print("Data loaded successfully.")
+    # Separate features (X) and labels (y)
+    X = df.drop("label", axis=1)
+    y = df["label"]
 
-    # 2. Split Data into Features (X) and Labels (y)
-    X = dataset.drop("label", axis=1)
-    y = dataset["label"]
+    # --- Data Leakage Check (remains the same) ---
+    print("\n--- DATA LEAKAGE CHECK ---")
+    if len(X) < 2:
+        print("Not enough data to perform split and leakage check.")
+        return
 
-    # 3. Split Data into Training and Testing sets
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train_full, X_test_full, y_train_full, y_test_full = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
+    # Convert back to DataFrames to use index for checking
+    X_train_df = pd.DataFrame(X_train_full, index=X_train_full.index)
+    X_test_df = pd.DataFrame(X_test_full, index=X_test_full.index)
 
-    # --- CHECK THE DATA LEAKAGE ---
-    print("\n--- DATA LEAKAGE CHECK ---")
-    train_indices = set(X_train.index)
-    test_indices = set(X_test.index)
-
-    overlap = train_indices.intersection(test_indices)
-
-    print(f"Training samples: {len(train_indices)}")
-    print(f"Test samples: {len(test_indices)}")
+    overlap = X_train_df.index.intersection(X_test_df.index)
+    print(f"Training samples: {len(X_train_df)}")
+    print(f"Test samples: {len(X_test_df)}")
     print(f"Overlap (leaked samples): {len(overlap)}")
-
-    if len(overlap) > 0:
-        print("!!! WARNING: DATA LEAKAGE DETECTED !!!")
+    if len(overlap) == 0:
+        print("--- CHECK PASSED: No data leakage detected via index. ---")
     else:
-        print("--- CHECK PASSED: No data leakage. ---")
-    # --- END OF CHECK ---
+        print("--- WARNING: Data leakage detected via index! ---")
+    # --- End Leakage Check ---
 
-    print(
-        f"Data split: {len(X_train)} training samples, {len(X_test)} testing samples."
+    # 2. Split Data (using the same split as the check)
+    X_train, X_test, y_train, y_test = (
+        X_train_full,
+        X_test_full,
+        y_train_full,
+        y_test_full,
     )
+    print(
+        f"\nData split: {len(X_train)} training samples, {len(X_test)} testing samples."
+    )
+    print("Class distribution in Training set:")
+    print(y_train.map(label_map).value_counts())
+    print("Class distribution in Test set:")
+    print(y_test.map(label_map).value_counts())
 
-    # 4. Initialize and Train the Model
-    print("Training RandomForestClassifier...")
-    model = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
+    # 3. Train Model (RandomForest handles multi-class automatically)
+    print("\nTraining RandomForestClassifier...")
+    model = RandomForestClassifier(
+        n_estimators=100, random_state=42, class_weight="balanced"
+    )
     model.fit(X_train, y_train)
     print("Model training complete.")
 
-    # 5. Save the Model
-    print(f"Saving model to {MODEL_PATH}...")
-    os.makedirs(MODEL_DIR, exist_ok=True)
-    joblib.dump(model, MODEL_PATH)
-    print("Model saved successfully.")
-
-    # 6. Evaluate the Model
+    # 4. Evaluate Model
     print("\n--- Model Evaluation ---")
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
-    print(f"Accuracy: {accuracy * 100:.2f}%")
+    report = classification_report(y_test, y_pred, target_names=CLASS_NAMES)
+
+    print(f"Accuracy: {accuracy*100:.2f}%")
     print("\nClassification Report:")
+    print(report)
 
-    # --- UPDATED: Added digits=4 ---
-    # This will show the true, non-rounded precision/recall
-    # and resolve the 1.00 vs 99.80 confusion.
-    print(
-        classification_report(
-            y_test,
-            y_pred,
-            target_names=["Stillness (0)", "Movement (1)"],
-            digits=4,  # <-- This is the added parameter
-        )
-    )
+    # --- Generate and Save Confusion Matrix ---
+    print("\nGenerating Confusion Matrix...")
+    try:
+        cm = confusion_matrix(y_test, y_pred)
+        # Use class names for display labels
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=CLASS_NAMES)
 
+        # Plot and save the figure
+        fig, ax = plt.subplots(figsize=(8, 8))  # Create figure and axes
+        disp.plot(ax=ax, cmap=plt.cm.Blues, values_format="d")  # Plot on the axes
+        plt.title("Confusion Matrix")
+        plt.tight_layout()  # Adjust layout
+        plt.savefig(CONFUSION_MATRIX_FILE)
+        print(f"Confusion matrix plot saved to {CONFUSION_MATRIX_FILE}")
+        plt.close(fig)  # Close the figure to free memory
 
-if __name__ == "__main__":
-    # This allows you to run the script directly from the terminal
-    # using: python src/model_trainer.py
-    train_model()
+    except Exception as e:
+        print(f"Error generating or saving confusion matrix: {e}")
+    # ---
+
+    # 5. Save Model
+    print(f"\nSaving model to {MODEL_FILE}...")
+    try:
+        joblib.dump(model, MODEL_FILE)
+        print("Model saved successfully.")
+    except Exception as e:
+        print(f"Error saving model: {e}")
+
+    print("\nModel training script finished.")
