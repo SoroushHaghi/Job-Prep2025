@@ -58,7 +58,7 @@ def test_predictor_predict_method(
     predictor = ActivityPredictor(Path("fake/model.joblib"))
     prediction = predictor.predict(sample_data_window)
 
-    assert prediction == 1
+    assert prediction == "drinking"
     predictor.model.predict.assert_called_once()
 
     call_args = predictor.model.predict.call_args
