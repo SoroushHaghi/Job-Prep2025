@@ -12,7 +12,7 @@ packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
 # This line fixes the Python version error
-python = "^3.9" 
+python = "^3.10" 
 
 # --- Main Project Dependencies ---
 # We list all packages your project *needs* to run
@@ -23,6 +23,7 @@ typer = "^0.9.0"
 # 'rich' will be added automatically by the 'poetry add' command later.
 rich = "^14.2.0"
 click = "8.1.7"
+matplotlib = "^3.10.7"
 
 [tool.poetry.group.dev.dependencies]
 # --- Development Dependencies ---
