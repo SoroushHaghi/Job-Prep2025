@@ -5,9 +5,7 @@ from rich import print  # For better, colored terminal output
 
 # --- Imports for project modules ---
 from .drivers import SimulationDriver
-
-# Assuming WINDOW_SIZE is needed elsewhere, import it from app
-from .app import run_processing_loop
+from .app import run_processing_loop  # Removed unused WINDOW_SIZE import
 from .dataset_builder import build_feature_dataset
 from .model_trainer import train_model
 from .predictor import ActivityPredictor  # Import our multi-class predictor
@@ -16,7 +14,7 @@ from .predictor import ActivityPredictor  # Import our multi-class predictor
 app = typer.Typer(help="Main CLI for the Activity Recognition Project")
 
 
-# --- Existing Commands (No changes needed here) ---
+# --- Existing Commands ---
 
 
 @app.command()
@@ -24,10 +22,8 @@ def run(
     data_file: str = typer.Option(
         ..., "--data-file", "-f", help="Path to the sensor data CSV file."
     ),
-    # Use the imported WINDOW_SIZE constant for default? Or keep it simple?
-    # Keeping it 10 explicitly here might be clearer for CLI help.
     window_size: int = typer.Option(
-        10,  # Make sure this matches app.WINDOW_SIZE
+        10,  # Standardized window size
         "--window-size",
         "-w",
         help="Number of samples before feature calculation.",
@@ -36,12 +32,11 @@ def run(
     """
     (Legacy Command) Processes sensor data, calculates features over windows.
     """
-    # Note: This command's logic might need update if run_processing_loop expects uppercase keys now
     print(f"Initializing simulation with data from: {data_file}")
     print(f"Using window size: {window_size}")
     try:
         driver = SimulationDriver(filepath=data_file)
-        # Verify if run_processing_loop needs adjustment for 'X', 'Y', 'Z' keys
+        # Note: run_processing_loop might need update if it doesn't handle 'X','Y','Z'
         run_processing_loop(driver=driver, window_size=window_size)
         print("Operation completed successfully.")
     except Exception as e:
@@ -59,7 +54,6 @@ def cli_build_features():
     except Exception as e:
         print(f"[bold red]Error during feature building: {e}[/bold red]")
         raise typer.Exit(code=1)
-    # Success message is now inside build_feature_dataset
 
 
 @app.command("train")
@@ -72,10 +66,9 @@ def cli_train_model():
     except Exception as e:
         print(f"[bold red]Error during model training: {e}[/bold red]")
         raise typer.Exit(code=1)
-    # Success message is now inside train_model
 
 
-# --- UPDATED Command ---
+# --- UPDATED Command with Colors ---
 
 
 @app.command(help="Simulate real-time stream & predict activity (3-class).")
@@ -90,7 +83,7 @@ def predict_stream(
         show_default=False,
     ),
     model_file: Path = typer.Option(
-        "models/activity_classifier.joblib",  # <-- Closing quote was missing here
+        "models/activity_classifier.joblib",  # Correctly closed string
         "--model-file",
         "-m",
         help="Path to the trained multi-class model (.joblib)",
@@ -107,6 +100,9 @@ def predict_stream(
     """
     Simulates sensor stream, predicts activity (throwing, drinking, driving).
     """
+    # --- DEBUG LINE ADDED EARLIER ---
+    # print("--- DEBUG: predict_stream function started ---")
+    # --- END DEBUG ---
     print("📊 [bold]Starting Real-Time Activity Prediction[/bold]")
     print(f"🧠 Loading model from: [cyan]{model_file}[/cyan]")
     try:
@@ -132,7 +128,7 @@ def predict_stream(
 
     window = []
 
-    # --- Corrected logic using direct string output ---
+    # --- Logic with Rich Formatting Re-added ---
     try:
         while True:
             sample = driver.read()  # Reads {'X': ..., 'Y': ..., 'Z': ...}
@@ -147,27 +143,40 @@ def predict_stream(
                     # predictor.predict now returns the class name string directly
                     prediction_label = predictor.predict(window)
 
-                    # Simple print without complex formatting for now
-                    print(f"Prediction: {prediction_label}")
+                    # --- Rich Formatting for 3 Classes ---
+                    if prediction_label == "throwing":
+                        formatted_label = f"[bold yellow]{prediction_label}[/bold yellow]"  # Yellow for throwing
+                    elif prediction_label == "drinking":
+                        formatted_label = f"[bold cyan]{prediction_label}[/bold cyan]"  # Cyan for drinking
+                    elif prediction_label == "driving":
+                        formatted_label = f"[bold magenta]{prediction_label}[/bold magenta]"  # Magenta for driving
+                    else:  # Fallback for "Unknown"
+                        formatted_label = f"[bold red]{prediction_label}[/bold red]"
+
+                    print(f"Prediction: {formatted_label}")
+                    # --- End Rich Formatting ---
 
                 except Exception as e:
                     print(
                         f"[bold red]Error during prediction calculation: {e}[/bold red]"
                     )
-                    # Decide if you want to break or continue on prediction error
 
                 window = []  # Clear window for next batch
 
-    # --- End Corrected Logic ---
+    # --- End Logic ---
 
     except KeyboardInterrupt:
-        # Corrected print statement (no f-string needed)
-        print("\n🛑 [yellow]Stream stopped by user.[/yellow]")
+        # Corrected print statement (no f-string needed) - Ensure this block is complete
+        print(
+            "\n🛑 [yellow]Stream stopped by user.[/yellow]"
+        )  # <-- Make sure this line exists and is complete
     except Exception as e:
         # Corrected print statement (needs f-string for variable e)
         print(f"\n[bold red]An error occurred during the stream: {e}[/bold red]")
         raise typer.Exit(code=1)
 
 
+# --- Ensure this block is present at the end ---
 if __name__ == "__main__":
     app()
+# --- End of file ---

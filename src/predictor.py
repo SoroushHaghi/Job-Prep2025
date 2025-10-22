@@ -14,10 +14,11 @@ class ActivityPredictor:
     """
 
     def __init__(self, model_path: Path):
-        """Loads the trained model."""  # <-- Check this docstring closure
+        """Loads the trained model."""
         try:
             self.model = joblib.load(model_path)
-            print(f"Model loaded successfully from {model_path}")  # Confirmation
+            # Optional: Keep this confirmation print if you like
+            # print(f"Model loaded successfully from {model_path}")
         except FileNotFoundError:
             print(f"Error: Model not found at {model_path}")
             print("Please run the 'train' command first.")
@@ -42,8 +43,7 @@ class ActivityPredictor:
     def predict(self, data_window: list[dict]) -> str:
         """
         Predicts the activity for a window and returns the class name.
-        Includes extra debugging.
-        """
+        """  # <-- Ensure docstring is closed
         window_df = pd.DataFrame(data_window).astype(float)
 
         feature_dict = {}
@@ -57,31 +57,40 @@ class ActivityPredictor:
         # Predict the class index
         prediction_index = self.model.predict(features_df)[0]
 
-        # --- MORE DEBUGGING ---
-        print(
-            f"DEBUG: Raw prediction index: {prediction_index} (Type: {type(prediction_index)})"
-        )
-        # --- END MORE DEBUGGING ---
+        # --- DEBUG LINES REMOVED ---
+        # print(f"DEBUG: Raw prediction index: {prediction_index} (Type: {type(prediction_index)})")
+        # --- END DEBUG LINES ---
 
-        prediction_name = "Fallback Default"  # Initialize with a different default
+        prediction_name = "Unknown"  # Default in case of error
 
         # Map the index to the human-readable class name
         try:
             # Explicitly cast to int just in case it's a float like 0.0
             index = int(prediction_index)
-            prediction_name = CLASS_NAMES[index]
-            print(
-                f"DEBUG: Mapped index {index} to name '{prediction_name}' successfully."
-            )  # DEBUG Success
+            # Check if index is within the valid range for CLASS_NAMES
+            if 0 <= index < len(CLASS_NAMES):
+                prediction_name = CLASS_NAMES[index]
+                # --- DEBUG LINE REMOVED ---
+                # print(f"DEBUG: Mapped index {index} to name '{prediction_name}' successfully.")
+                # --- END DEBUG LINES ---
+            else:
+                # Index is out of expected range (0, 1, 2)
+                print(
+                    f"Warning: Model predicted an out-of-bounds index: {prediction_index}"
+                )
+                # prediction_name remains "Unknown"
 
-        except (IndexError, TypeError, ValueError) as e:  # Catch more potential errors
+        except (
+            TypeError,
+            ValueError,
+        ) as e:  # Catch potential errors during int conversion
             print(
-                f"Warning: Failed to map index {prediction_index}. Error: {type(e).__name__} - {e}"
+                f"Warning: Could not convert prediction index {prediction_index} to int. Error: {type(e).__name__} - {e}"
             )
-            prediction_name = "Unknown"  # Set to Unknown on failure
+            # prediction_name remains "Unknown"
 
-        # --- MORE DEBUGGING ---
-        print(f"DEBUG: Returning prediction_name: '{prediction_name}'")
-        # --- END MORE DEBUGGING ---
+        # --- DEBUG LINE REMOVED ---
+        # print(f"DEBUG: Returning prediction_name: '{prediction_name}'")
+        # --- END DEBUG LINES ---
 
         return prediction_name
