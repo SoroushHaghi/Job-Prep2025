@@ -1,20 +1,22 @@
 repos:
-  - repo: https://github.com/psf/black
-    rev: 24.4.2
-    hooks:
-      - id: black
-        language_version: python3.11
+- repo: https://github.com/psf/black
+  rev: 24.4.2
+  hooks:
+  - id: black
+    language_version: python3.11
 
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.1.0
-    hooks:
-      - id: flake8
+- repo: https://github.com/pycqa/flake8
+  rev: 7.1.0
+  hooks:
+  - id: flake8
 
-  - repo: local
-    hooks:
-      - id: pytest
-        name: pytest
-        entry: python -m poetry run pytest  # <- این خط اصلاح شده است
-        language: system                    # <- این خط اصلاح شده است
-        types: [python]
-        pass_filenames: false
+- repo: local
+  hooks:
+  - id: pytest
+    name: pytest
+    # --- THIS IS THE NEW FIX ---
+    # We call the venv's python.exe directly to run pytest
+    entry: D:\\4Github\\Job-Prep2025\\.venv\\Scripts\\python.exe -m pytest
+    language: system
+    types: [python]
+    pass_filenames: false

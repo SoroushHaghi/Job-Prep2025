@@ -5,10 +5,13 @@ from rich import print  # For better, colored terminal output
 
 # --- Imports for project modules ---
 from .drivers import SimulationDriver
-from .app import run_processing_loop  # Removed unused WINDOW_SIZE import
+from .app import run_processing_loop
 from .dataset_builder import build_feature_dataset
 from .model_trainer import train_model
-from .predictor import ActivityPredictor  # Import our multi-class predictor
+from .predictor import ActivityPredictor
+
+# --- NEW ---
+from .train_dl import train_deep_learning_model
 
 # --- Create a multi-command app ---
 app = typer.Typer(help="Main CLI for the Activity Recognition Project")
@@ -36,7 +39,6 @@ def run(
     print(f"Using window size: {window_size}")
     try:
         driver = SimulationDriver(filepath=data_file)
-        # Note: run_processing_loop might need update if it doesn't handle 'X','Y','Z'
         run_processing_loop(driver=driver, window_size=window_size)
         print("Operation completed successfully.")
     except Exception as e:
@@ -68,7 +70,20 @@ def cli_train_model():
         raise typer.Exit(code=1)
 
 
-# --- UPDATED Command with Colors ---
+# --- NEW: train-dl command ---
+@app.command("train-dl")
+def cli_train_dl_model():
+    """
+    Trains the 1D-CNN Deep Learning model (cnn_model.pth).
+    """
+    try:
+        train_deep_learning_model()
+    except Exception as e:
+        print(f"[bold red]Error during DL model training: {e}[/bold red]")
+        raise typer.Exit(code=1)
+
+
+# --- UPDATED predict_stream Command ---
 
 
 @app.command(help="Simulate real-time stream & predict activity (3-class).")
@@ -83,13 +98,23 @@ def predict_stream(
         show_default=False,
     ),
     model_file: Path = typer.Option(
-        "models/activity_classifier.joblib",  # Correctly closed string
+        "models/activity_classifier.joblib",  # Default RF model
         "--model-file",
         "-m",
-        help="Path to the trained multi-class model (.joblib)",
+        # --- MODIFIED: Help text is now more general ---
+        help="Path to the trained model (.joblib for 'rf', .pth for 'cnn')",
         exists=True,
         readable=True,
     ),
+    # --- MODIFIED: --model-type option is added back ---
+    model_type: str = typer.Option(
+        "rf",  # Default to RandomForest
+        "--model-type",
+        "-t",
+        help="Type of model: 'rf' (RandomForest) or 'cnn' (1D-CNN).",
+        case_sensitive=False,  # 'rf' or 'RF' will both work
+    ),
+    # --- (End of new option) ---
     window_size: int = typer.Option(
         10,  # Default window size matches training
         "--window-size",
@@ -100,16 +125,21 @@ def predict_stream(
     """
     Simulates sensor stream, predicts activity (throwing, drinking, driving).
     """
-    # --- DEBUG LINE ADDED EARLIER ---
-    # print("--- DEBUG: predict_stream function started ---")
-    # --- END DEBUG ---
     print("📊 [bold]Starting Real-Time Activity Prediction[/bold]")
-    print(f"🧠 Loading model from: [cyan]{model_file}[/cyan]")
+
+    # --- MODIFIED: Print statement now shows model type ---
+    print(
+        f"🧠 Loading [bold]{model_type.upper()}[/bold] model from: "
+        f"[cyan]{model_file}[/cyan]"
+    )
+
     try:
-        predictor = ActivityPredictor(model_path=model_file)
+        # --- MODIFIED: Pass model_type to the constructor ---
+        predictor = ActivityPredictor(model_path=model_file, model_type=model_type)
     except FileNotFoundError:
         print(
-            f"[bold red]Error: Model file not found at {model_file}. Run 'train' first.[/bold red]"
+            f"[bold red]Error: Model file not found at {model_file}. "
+            "Run 'train' or 'train-dl' first.[/bold red]"
         )
         raise typer.Exit(code=1)
     except Exception as e:
@@ -128,7 +158,7 @@ def predict_stream(
 
     window = []
 
-    # --- Logic with Rich Formatting Re-added ---
+    # --- Logic with Rich Formatting (No changes below this line) ---
     try:
         while True:
             sample = driver.read()  # Reads {'X': ..., 'Y': ..., 'Z': ...}
@@ -140,16 +170,20 @@ def predict_stream(
 
             if len(window) == window_size:
                 try:
-                    # predictor.predict now returns the class name string directly
+                    # predictor.predict now returns the class name string
                     prediction_label = predictor.predict(window)
 
                     # --- Rich Formatting for 3 Classes ---
                     if prediction_label == "throwing":
-                        formatted_label = f"[bold yellow]{prediction_label}[/bold yellow]"  # Yellow for throwing
+                        formatted_label = (
+                            f"[bold yellow]{prediction_label}[/bold yellow]"
+                        )
                     elif prediction_label == "drinking":
-                        formatted_label = f"[bold cyan]{prediction_label}[/bold cyan]"  # Cyan for drinking
+                        formatted_label = f"[bold cyan]{prediction_label}[/bold cyan]"
                     elif prediction_label == "driving":
-                        formatted_label = f"[bold magenta]{prediction_label}[/bold magenta]"  # Magenta for driving
+                        formatted_label = (
+                            f"[bold magenta]{prediction_label}[/bold magenta]"
+                        )
                     else:  # Fallback for "Unknown"
                         formatted_label = f"[bold red]{prediction_label}[/bold red]"
 
@@ -163,15 +197,9 @@ def predict_stream(
 
                 window = []  # Clear window for next batch
 
-    # --- End Logic ---
-
     except KeyboardInterrupt:
-        # Corrected print statement (no f-string needed) - Ensure this block is complete
-        print(
-            "\n🛑 [yellow]Stream stopped by user.[/yellow]"
-        )  # <-- Make sure this line exists and is complete
+        print("\n🛑 [yellow]Stream stopped by user.[/yellow]")
     except Exception as e:
-        # Corrected print statement (needs f-string for variable e)
         print(f"\n[bold red]An error occurred during the stream: {e}[/bold red]")
         raise typer.Exit(code=1)
 
