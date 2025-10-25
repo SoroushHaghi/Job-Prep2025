@@ -9,12 +9,65 @@ from .app import run_processing_loop
 from .dataset_builder import build_feature_dataset
 from .model_trainer import train_model
 from .predictor import ActivityPredictor
+from .visualize_data import plot_raw_sensor_data
+
+from .plot_comparison import plot_comparison
 
 # --- NEW ---
 from .train_dl import train_deep_learning_model
 
 # --- Create a multi-command app ---
 app = typer.Typer(help="Main CLI for the Activity Recognition Project")
+
+
+@app.command("plot-comparison")
+def cli_plot_comparison(
+    rf_results_path: str = typer.Option(
+        "models/rf_results.json",
+        "--rf-results",
+        help="Path to the RandomForest results JSON file.",
+    ),
+    cnn_results_path: str = typer.Option(
+        "models/cnn_results.json",
+        "--cnn-results",
+        help="Path to the 1D-CNN results JSON file.",
+    ),
+    output_path: str = typer.Option(
+        "docs/comparison_plot.png",
+        "--output",
+        help="Path to save the comparison plot.",
+    ),
+):
+    """
+    Generates a comparative plot of the F1-scores for the two models.
+    """
+    try:
+        plot_comparison(rf_results_path, cnn_results_path, output_path)
+    except Exception as e:
+        print(f"[bold red]Error during plot comparison: {e}[/bold red]")
+        raise typer.Exit(code=1)
+
+
+@app.command("visualize-data")
+def cli_visualize_data(
+    data_file: str = typer.Option(
+        ..., "--data-file", "-f", help="Path to the raw sensor data CSV file."
+    ),
+    output_file: str = typer.Option(
+        "docs/raw_data_visualization.png",
+        "--output-file",
+        "-o",
+        help="Path to save the output plot.",
+    ),
+):
+    """
+    Generates a plot of the raw sensor data (X, Y, Z) from a CSV file.
+    """
+    try:
+        plot_raw_sensor_data(file_path=data_file, output_path=output_file)
+    except Exception as e:
+        print(f"[bold red]Error during data visualization: {e}[/bold red]")
+        raise typer.Exit(code=1)
 
 
 # --- Existing Commands ---

@@ -8,6 +8,10 @@ from sklearn.metrics import classification_report
 from rich import print
 import numpy as np
 
+import json
+
+import matplotlib.pyplot as plt
+
 # --- Project Imports ---
 from .utils import (
     load_and_segment_all,
@@ -27,6 +31,9 @@ EPOCHS = 20
 # --- THIS LINE IS NOW CORRECTED ---
 DATA_DIR = PROJECT_ROOT / "data"
 MODEL_SAVE_PATH = PROJECT_ROOT / "models" / "cnn_model.pth"
+LOSS_CURVE_PATH = PROJECT_ROOT / "docs" / "cnn_loss_curves.png"
+ACCURACY_CURVE_PATH = PROJECT_ROOT / "docs" / "cnn_accuracy_curves.png"
+RESULTS_FILE = PROJECT_ROOT / "models" / "cnn_results.json"
 
 # Get class names in the correct order (matching CLASS_MAP)
 CLASS_NAMES = list(CLASS_MAP.keys())
@@ -76,21 +83,29 @@ def train_deep_learning_model():
     print(f"Total sequences created: {X.shape[0]}")
 
     # --- 3. Split Data ---
-    print("Splitting data into training and testing sets (80/20 split)...")
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+    print(
+        "Splitting data into training, validation, and testing sets (70/15/15 split)..."
+    )
+    X_train, X_temp, y_train, y_temp = train_test_split(
+        X, y, test_size=0.3, random_state=42, stratify=y
+    )
+    X_val, X_test, y_val, y_test = train_test_split(
+        X_temp, y_temp, test_size=0.5, random_state=42, stratify=y_temp
     )
 
     print(f"Training samples: {X_train.shape[0]}")
+    print(f"Validation samples: {X_val.shape[0]}")
     print(f"Testing samples: {X_test.shape[0]}")
 
     # --- 4. Create PyTorch DataLoaders ---
     # Convert numpy arrays to PyTorch Tensors
     train_dataset = TensorDataset(torch.tensor(X_train), torch.tensor(y_train))
+    val_dataset = TensorDataset(torch.tensor(X_val), torch.tensor(y_val))
     test_dataset = TensorDataset(torch.tensor(X_test), torch.tensor(y_test))
 
     # Create DataLoaders
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     # --- 5. Initialize Model, Loss, and Optimizer ---
@@ -104,9 +119,14 @@ def train_deep_learning_model():
 
     # --- 6. Training Loop ---
     print("[yellow]Starting model training...[/yellow]")
+    history = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
+
     for epoch in range(EPOCHS):
         model.train()  # Set model to training mode
         running_loss = 0.0
+        correct_train = 0
+        total_train = 0
+
         for i, (inputs, labels) in enumerate(train_loader):
             # Zero the parameter gradients
             optimizer.zero_grad()
@@ -120,17 +140,70 @@ def train_deep_learning_model():
             optimizer.step()
 
             running_loss += loss.item()
+            _, predicted = torch.max(outputs.data, 1)
+            total_train += labels.size(0)
+            correct_train += (predicted == labels).sum().item()
 
-        # Print loss for this epoch
+        train_loss = running_loss / len(train_loader)
+        train_acc = correct_train / total_train
+        history["train_loss"].append(train_loss)
+        history["train_acc"].append(train_acc)
+
+        # Validation loop
+        model.eval()
+        val_loss = 0.0
+        correct_val = 0
+        total_val = 0
+        with torch.no_grad():
+            for inputs, labels in val_loader:
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item()
+                _, predicted = torch.max(outputs.data, 1)
+                total_val += labels.size(0)
+                correct_val += (predicted == labels).sum().item()
+
+        val_loss /= len(val_loader)
+        val_acc = correct_val / total_val
+        history["val_loss"].append(val_loss)
+        history["val_acc"].append(val_acc)
+
         print(
             f"Epoch [{epoch + 1}/{EPOCHS}], "
-            f"Loss: {running_loss / len(train_loader):.4f}"
+            f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, "
+            f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}"
         )
 
     print("[bold green]Training complete.[/bold green]")
 
-    # --- 7. Evaluation ---
-    print("\n--- Model Evaluation ---")
+    # --- 7. Plotting Training History ---
+    print("\nGenerating training history plots...")
+    # Plot Loss
+    plt.figure(figsize=(10, 5))
+    plt.plot(history["train_loss"], label="Train Loss")
+    plt.plot(history["val_loss"], label="Validation Loss")
+    plt.title("Loss vs. Epochs")
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.savefig(LOSS_CURVE_PATH)
+    plt.close()
+    print(f"Loss curve plot saved to [cyan]{LOSS_CURVE_PATH}[/cyan]")
+
+    # Plot Accuracy
+    plt.figure(figsize=(10, 5))
+    plt.plot(history["train_acc"], label="Train Accuracy")
+    plt.plot(history["val_acc"], label="Validation Accuracy")
+    plt.title("Accuracy vs. Epochs")
+    plt.xlabel("Epochs")
+    plt.ylabel("Accuracy")
+    plt.legend()
+    plt.savefig(ACCURACY_CURVE_PATH)
+    plt.close()
+    print(f"Accuracy curve plot saved to [cyan]{ACCURACY_CURVE_PATH}[/cyan]")
+
+    # --- 8. Evaluation ---
+    print("\n--- Model Evaluation on Test Set ---")
     model.eval()  # Set model to evaluation mode
     all_preds = []
     all_true = []
@@ -144,12 +217,19 @@ def train_deep_learning_model():
             all_preds.extend(predicted.numpy())
             all_true.extend(labels.numpy())
 
-    # --- 8. Print Classification Report ---
-    # This is the report we need for Part 2!
-    print(classification_report(all_true, all_preds, target_names=CLASS_NAMES))
+    # --- 9. Print and Save Classification Report ---
+    report = classification_report(all_true, all_preds, target_names=CLASS_NAMES)
+    report_dict = classification_report(
+        all_true, all_preds, target_names=CLASS_NAMES, output_dict=True
+    )
+    print(report)
 
-    # --- 9. Save Model ---
-    print(f"Saving model to [cyan]{MODEL_SAVE_PATH}[/cyan]...")
+    with open(RESULTS_FILE, "w") as f:
+        json.dump(report_dict, f, indent=4)
+    print(f"Classification report saved to {RESULTS_FILE}")
+
+    # --- 10. Save Model ---
+    print(f"\nSaving model to [cyan]{MODEL_SAVE_PATH}[/cyan]...")
     MODEL_SAVE_PATH.parent.mkdir(parents=True, exist_ok=True)
     torch.save(model.state_dict(), MODEL_SAVE_PATH)
     print("Model saved successfully.")
