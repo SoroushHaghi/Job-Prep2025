@@ -1,7 +1,8 @@
-# src/main.py
 import typer
-from pathlib import Path  # Import Path for handling file paths
-from rich import print  # For better, colored terminal output
+from pathlib import Path
+from rich import print
+import random  # <-- NEW: For random demo file selection
+from typing import Optional  # <-- NEW: For optional parameters
 
 # --- Imports for project modules ---
 from .drivers import SimulationDriver
@@ -10,10 +11,7 @@ from .dataset_builder import build_feature_dataset
 from .model_trainer import train_model
 from .predictor import ActivityPredictor
 from .visualize_data import plot_raw_sensor_data
-
 from .plot_comparison import plot_comparison
-
-# --- NEW ---
 from .train_dl import train_deep_learning_model
 
 # --- Create a multi-command app ---
@@ -123,7 +121,6 @@ def cli_train_model():
         raise typer.Exit(code=1)
 
 
-# --- NEW: train-dl command ---
 @app.command("train-dl")
 def cli_train_dl_model():
     """
@@ -141,35 +138,31 @@ def cli_train_dl_model():
 
 @app.command(help="Simulate real-time stream & predict activity (3-class).")
 def predict_stream(
-    data_file: Path = typer.Option(
-        ...,
+    # --- MODIFIED: data_file is now Optional for demo mode ---
+    data_file: Optional[Path] = typer.Option(
+        None,
         "--data-file",
         "-f",
-        help="Path to simulation CSV (e.g., data/throwing.csv)",
-        exists=True,
-        readable=True,
+        help="Path to simulation CSV. If omitted, runs demo with a random file.",
         show_default=False,
     ),
-    model_file: Path = typer.Option(
-        "models/activity_classifier.joblib",  # Default RF model
+    # --- MODIFIED: model_file is now Optional for auto-selection ---
+    model_file: Optional[Path] = typer.Option(
+        None,
         "--model-file",
         "-m",
-        # --- MODIFIED: Help text is now more general ---
-        help="Path to the trained model (.joblib for 'rf', .pth for 'cnn')",
-        exists=True,
-        readable=True,
+        help="Path to trained model. If omitted, uses default for model type.",
+        show_default=False,
     ),
-    # --- MODIFIED: --model-type option is added back ---
     model_type: str = typer.Option(
         "rf",  # Default to RandomForest
         "--model-type",
         "-t",
         help="Type of model: 'rf' (RandomForest) or 'cnn' (1D-CNN).",
-        case_sensitive=False,  # 'rf' or 'RF' will both work
+        case_sensitive=False,
     ),
-    # --- (End of new option) ---
     window_size: int = typer.Option(
-        10,  # Default window size matches training
+        10,
         "--window-size",
         "-w",
         help="Samples per prediction window. MUST match training.",
@@ -180,21 +173,60 @@ def predict_stream(
     """
     print("📊 [bold]Starting Real-Time Activity Prediction[/bold]")
 
-    # --- MODIFIED: Print statement now shows model type ---
+    # --- NEW: Logic for random demo data file ---
+    if data_file is None:
+        print(
+            "[bold blue]No data file provided. Running demo with a random file...[/bold blue]"
+        )
+        data_dir = Path("data")
+        demo_files = [
+            data_dir / "drinking.csv",
+            data_dir / "driving.csv",
+            data_dir / "throwing.csv",
+        ]
+        valid_demo_files = [f for f in demo_files if f.exists()]
+
+        if not valid_demo_files:
+            print(
+                "[bold red]Error: No demo data files (drinking.csv, etc.) found in 'data/' directory.[/bold red]"
+            )
+            raise typer.Exit(code=1)
+
+        data_file = random.choice(valid_demo_files)
+        print(f"🎲 Randomly selected demo file: [green]{data_file.name}[/green]")
+
+    # --- NEW: Manual validation for data_file ---
+    if not data_file.exists():
+        print(f"[bold red]Error: Data file not found at {data_file}[/bold red]")
+        raise typer.Exit(code=1)
+
+    # --- NEW: Logic for automatic model file selection ---
+    if model_file is None:
+        if model_type.lower() == "cnn":
+            model_file = Path("models/cnn_model.pth")
+        elif model_type.lower() == "rf":
+            model_file = Path("models/activity_classifier.joblib")
+        else:
+            print(
+                f"[bold red]Error: Unknown model type '{model_type}'. Use 'rf' or 'cnn'.[/bold red]"
+            )
+            raise typer.Exit(code=1)
+
+    # --- NEW: Manual validation for model_file ---
+    if not model_file.exists():
+        print(
+            f"[bold red]Error: Model file not found at {model_file}. "
+            f"Run 'train' or 'train-dl' first.[/bold red]"
+        )
+        raise typer.Exit(code=1)
+
     print(
         f"🧠 Loading [bold]{model_type.upper()}[/bold] model from: "
         f"[cyan]{model_file}[/cyan]"
     )
 
     try:
-        # --- MODIFIED: Pass model_type to the constructor ---
         predictor = ActivityPredictor(model_path=model_file, model_type=model_type)
-    except FileNotFoundError:
-        print(
-            f"[bold red]Error: Model file not found at {model_file}. "
-            "Run 'train' or 'train-dl' first.[/bold red]"
-        )
-        raise typer.Exit(code=1)
     except Exception as e:
         print(f"[bold red]Error loading predictor: {e}[/bold red]")
         raise typer.Exit(code=1)
@@ -211,10 +243,9 @@ def predict_stream(
 
     window = []
 
-    # --- Logic with Rich Formatting (No changes below this line) ---
     try:
         while True:
-            sample = driver.read()  # Reads {'X': ..., 'Y': ..., 'Z': ...}
+            sample = driver.read()
             if sample is None:
                 print("\n🏁 [yellow]End of sensor stream.[/yellow]")
                 break
@@ -223,10 +254,8 @@ def predict_stream(
 
             if len(window) == window_size:
                 try:
-                    # predictor.predict now returns the class name string
                     prediction_label = predictor.predict(window)
 
-                    # --- Rich Formatting for 3 Classes ---
                     if prediction_label == "throwing":
                         formatted_label = (
                             f"[bold yellow]{prediction_label}[/bold yellow]"
@@ -241,7 +270,6 @@ def predict_stream(
                         formatted_label = f"[bold red]{prediction_label}[/bold red]"
 
                     print(f"Prediction: {formatted_label}")
-                    # --- End Rich Formatting ---
 
                 except Exception as e:
                     print(
