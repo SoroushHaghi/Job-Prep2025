@@ -1,31 +1,23 @@
-# Real-Time Multi-Class Activity Recognition (Classical ML vs. 1D-CNN)
+# Modular AI Pipeline for Sensor Activity Recognition
 
 ![Live Demo](docs/demo.gif)
 
-## 🚀 Overview
+## Overview
 
-This project presents an **end-to-end real-time activity recognition system** that classifies human actions (throwing, drinking, driving) from sensor data streams.
+This project is a modular, high-performance software pipeline for real-time analysis of sensor data. It is engineered for reliability, testability, and reproducibility, demonstrating advanced software engineering principles applied to a scientific data problem.
 
-It integrates two complementary approaches:
-- A **classical Random Forest pipeline** using engineered statistical features.
-- A **deep 1D-Convolutional Neural Network (1D-CNN)** trained directly on raw sequential data.
-
-A unified inference engine allows direct runtime comparison between both models, offering insights into trade-offs between **classical machine learning** and **deep learning** approaches.  
-The system is modular, containerized, and includes automated testing and CI/CD pipelines for full reproducibility.
+The system processes raw time-series data and uses a dual-model engine (Classical RandomForest vs. 1D-CNN) to classify human activities. The entire stack is containerized with Docker and fully automated with a GitLab CI/CD pipeline.
 
 ---
 
-## ✨ Key Features
+## ✨ Key Features (Engineered for Performance)
 
-- **Unified Multi-Model Engine:** Easily switch between `RandomForest` and `1D-CNN` for real-time predictions using a single CLI flag (`--model-type`).
-- **Deep Learning Workflow:** Complete PyTorch training pipeline for sequential 1D sensor data.
-- **Classical ML Workflow:** Scikit-learn training pipeline with automatic feature extraction (`mean`, `std`, `rms`, etc.).
-- **Command-Line Interface (CLI):** Built with **Typer** and **Rich**, providing intuitive commands (`train`, `train-dl`, `predict-stream`).
-- **Containerized Environment:** Deploy anywhere using a lightweight **Dockerfile**.
-- **Automated Quality Control:**
-  - **GitLab CI/CD:** Runs linting (`flake8`) and unit tests (`pytest`) on each commit.
-  - **Pre-Commit Hooks:** Enforces consistent formatting (`black`) and static analysis.
-- **Dependency Management:** Managed with **Poetry** for reproducible builds and isolation.
+* **Modular Driver-based Architecture:** Core logic is decoupled from data sources. A `SimulationDriver` replays real data, allowing the entire system to be tested without physical hardware.
+* **Automated DevOps Pipeline (GitLab CI):** Every commit automatically triggers linting (`flake8`), static type checking (`mypy`), and a full unit test suite (`pytest`) to guarantee code hygiene.
+* **100% Testability:** The driver-based design makes the software fully testable in an automated CI environment, ensuring maximum reliability.
+* **Containerized & Reproducible:** Packaged with **Docker** and managed by **Poetry**, guaranteeing a consistent runtime environment anywhere.
+* **Dual-Model Engine:** Implements and compares a classical `RandomForest` with a deep learning `1D-CNN` (PyTorch) model, achieving **93% accuracy**.
+* **Professional CLI:** A clean command-line interface built with **Typer** for all pipeline operations.
 
 ---
 
@@ -34,92 +26,42 @@ The system is modular, containerized, and includes automated testing and CI/CD p
 | Category | Tools & Libraries |
 |-----------|-------------------|
 | **Language** | Python 3.10+ |
-| **ML / DL** | Scikit-learn, PyTorch, Pandas, NumPy |
-| **CLI** | Typer, Rich |
-| **DevOps** | Docker, Poetry, Pre-commit, GitLab CI |
-| **Testing & Quality** | Pytest, Pytest-Mock, Black, Flake8 |
-| **Visualization** | Matplotlib |
+| **ML / DL** | PyTorch, Scikit-learn, Pandas, NumPy |
+| **DevOps** | **GitLab CI/CD**, **Docker**, Poetry |
+| **Testing & Quality** | **Pytest**, Mypy, Flake8, Pre-commit |
+| **Tools** | Typer (CLI), Rich |
 
 ---
 
-## ⚙️ Installation & Setup
+## 🚀 Quick Start & Usage
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/SoroushHaghi/Job-Prep2025.git
-   cd Job-Prep2025
-   ```
+### 1. Run with Docker (Recommended)
 
-2. **Install Poetry:**  
-   Follow the [official Poetry installation guide](https://python-poetry.org/docs/#installation).
+This method runs the entire application in a container without any local setup.
 
-3. **Install dependencies:**
-   ```bash
-   poetry install
-   ```
-
-4. **Activate pre-commit hooks:**
-   ```bash
-   poetry run pre-commit install
-   ```
-
----
-
-## ▶️ Usage
-
-All commands must be executed inside the Poetry environment using `poetry run`.
-
-### 1. Build Feature Dataset (for RandomForest)
-Generate engineered features for the classical ML model:
 ```bash
-poetry run python -m src.main build-features
-```
+# 1. Build the image
+docker build -t sensor-pipeline .
 
-### 2. Train Models
-Train one or both available models:
-```bash
-# RandomForest model
-poetry run python -m src.main train
+# 2. Run live prediction (using the 93% accurate 1D-CNN model)
+docker run --rm sensor-pipeline predict-stream --model-type cnn --data-file data/movement_sample.csv
 
-# 1D-CNN model
-poetry run python -m src.main train-dl
-```
 
-### 3. Run Real-Time Inference Simulation
-Use pre-recorded sensor data to simulate streaming predictions:
-```bash
-# Default (RandomForest)
-poetry run python -m src.main predict-stream --data-file data/throwing.csv
+2. Run Locally with PoetryRequires Poetry to be installed.Bash# 1. Install dependencies
+poetry install
 
-# 1D-CNN model
-poetry run python -m src.main predict-stream --data-file data/throwing.csv --model-type cnn --model-file models/cnn_model.pth
-```
+# 2. Build features for the classical model
+poetry run sensor-app build-features
 
-### 4. Run via Docker
-Build and execute the system inside a Docker container:
-```bash
-# Build image
-docker build -t activity-recognition .
+# 3. Train the 1D-CNN model (achieved 93% accuracy)
+poetry run sensor-app train-dl
 
-# Run inference
-docker run --rm activity-recognition predict-stream --data-file data/drinking.csv
-docker run --rm activity-recognition predict-stream --data-file data/drinking.csv --model-type cnn --model-file models/cnn_model.pth
-```
+# 4. Train the RandomForest model
+poetry run sensor-app train
 
----
-
-## 📊 Model Comparison
-
-Both models were trained on the same dataset to compare generalization and inference performance.
-
-| Metric | RandomForest | 1D-CNN |
-|:--|:--:|:--:|
-| **Overall Accuracy** | 91.7 % | **93.0 %** |
-| **Throwing (F1)** | 0.94 | **0.96** |
-| **Drinking (F1)** | 0.89 | **0.90** |
-| **Driving (F1)** | 0.92 | 0.92 |
-
----
+# 5. Run live prediction simulation
+poetry run sensor-app predict-stream --model-type cnn --data-file data/movement_sample.csv
+📊 Model ComparisonMetricRandomForest1D-CNN (PyTorch)Overall Accuracy91.7 %93.0 %Throwing (F1)0.940.96Drinking (F1)0.890.90Driving (F1)0.920.92
 
 ## 🗂️ Project Structure
 
