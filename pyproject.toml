@@ -43,3 +43,6 @@ build-backend = "poetry.core.masonry.api"
 # We keep your original flake8 config
 max-line-length = 88
 extend-ignore = "E501"
+
+[tool.poetry.scripts]
+sensor-app = "src.main:app"
